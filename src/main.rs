@@ -24,7 +24,7 @@ pub fn main () {
     canvas.clear();
     canvas.present();
 
-    let mut velocity = Point::new(0,0);
+    let mut direction = Point::new(0,0);
 
     let mut ball = Ball::new(
         Vector2D::new(100.0, 100.0), 
@@ -40,14 +40,48 @@ pub fn main () {
         RED
     );
 
-
+    
     let mut event_pump = sdl_context.event_pump().unwrap();
     'running: loop {
         canvas.set_draw_color(LIGHT_BLUE);
         canvas.clear();
-
+        
+        let (mut UP,mut DOWN,mut LEFT,mut RIGHT) = (false, false, false, false);
         for event in event_pump.poll_iter() {
-            set_velocity(&event, &mut velocity);
+            match event {
+                Event::KeyDown {  repeat: false, keycode: Some(Keycode::Down), .. } => {
+                    DOWN = true;
+                },
+                Event::KeyDown { repeat: false, keycode: Some(Keycode::Up), .. } => {
+                    UP = true; 
+                },
+                Event::KeyDown { repeat: false, keycode: Some(Keycode::Left), .. } => {
+                    LEFT = true;
+                },
+                Event::KeyDown { repeat: false, keycode: Some(Keycode::Right), .. } => {
+                    RIGHT = true;
+                }
+                _ => {}
+            }
+
+            if UP {
+                direction.y = -1;
+            }
+            if DOWN {
+                direction.y = 1;
+            }
+            if LEFT {
+                direction.x = -1;
+            }
+            if RIGHT {
+                direction.x = 1;
+            }
+            if !UP && !DOWN {
+                direction.y = 0;
+            }
+            if !LEFT && !RIGHT {
+                direction.x = 0;
+            }
 
             match event {
                 Event::Quit { .. } |
@@ -60,7 +94,7 @@ pub fn main () {
         
         //Update
 
-        ball.set_velocity(Vector2D::new(velocity.x as f32, velocity.y as f32));
+        ball.set_direction(Vector2D::new(direction.x as f32, direction.y as f32));
         ball.update().unwrap();
 
         //Draw
@@ -71,6 +105,12 @@ pub fn main () {
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 120));
     }
+}
+
+fn fun_name(event: &Event, direction: &mut Point) {
+
+
+    
 }
 
 fn set_velocity(event: &Event, velocity: &mut Point) {
