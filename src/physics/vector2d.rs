@@ -18,4 +18,8 @@ impl Vector2D {
     pub fn add(&self, other: Vector2D) -> Vector2D {
         Vector2D::new(self.x + other.x, self.y + other.y)
     }
+
+    pub fn multiply(&self, value: f32) -> Vector2D {
+        Vector2D::new(self.x * value, self.y * value)
+    }
 }
