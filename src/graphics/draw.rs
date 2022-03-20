@@ -18,7 +18,7 @@ impl Draw for Canvas<Window> {
     fn draw_lines_with_color<'a, P>(&mut self, points: P, color: Color) -> Result<(), String> where P: Into<&'a [Point]> {
         self.set_draw_color(color);
 
-        let result = self.draw_lines(&points.into()[..]);
+        self.draw_lines(&points.into()[..]).unwrap();
 
         Ok(())
     }
@@ -34,7 +34,7 @@ impl Draw for Canvas<Window> {
             Point::new(point.x, point.y)
             ];
         
-        let result = self.draw_lines(&points[..]);
+        self.draw_lines(&points[..]).unwrap();
 
         Ok(())
     }
@@ -59,7 +59,7 @@ impl DrawCircle for Canvas<Window> {
             points.push(point);
         }
         
-        let res = self.draw_points(&points[..]);
+        self.draw_points(&points[..]).unwrap();
 
         Ok(())
     }
@@ -69,8 +69,8 @@ impl DrawCircle for Canvas<Window> {
         
         let mut points: Vec<Point> = vec![];
         
-        for thicknessIndex in 0..thickness {
-            let radius = radius + thicknessIndex as f32;
+        for thickness_index in 0..thickness {
+            let radius = radius + thickness_index as f32;
             let quantity = radius * 20.0;
             for i in 0..quantity as i32 {
                 let rr = (2 * i) as f32;
@@ -85,7 +85,7 @@ impl DrawCircle for Canvas<Window> {
             }
         }
         
-        let res = self.draw_points(&points[..]);
+        self.draw_points(&points[..]).unwrap();
 
         Ok(())
     }
@@ -97,8 +97,8 @@ impl DrawCircle for Canvas<Window> {
 
         points.push(Point::new(center.x, center.y));
         
-        for thicknessIndex in 0..radius as i32 {
-            let radius = thicknessIndex as f32;
+        for thickness_index in 0..radius as i32 {
+            let radius = thickness_index as f32;
             let quantity = radius * 20.0;
             for i in 0..quantity as i32 {
                 let rr = (2 * i) as f32;
@@ -113,7 +113,7 @@ impl DrawCircle for Canvas<Window> {
             }
         }
         
-        let res = self.draw_points(&points[..]);
+        self.draw_points(&points[..]).unwrap();
 
         Ok(())
     }

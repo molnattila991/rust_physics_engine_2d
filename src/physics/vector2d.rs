@@ -1,5 +1,6 @@
 use sdl2::rect::Point;
 
+#[derive(Clone)]
 pub struct Vector2D {
     x: f32,
     y: f32
@@ -10,7 +11,7 @@ impl Vector2D {
         Self {x, y}
     }
 
-    pub fn into_point(&self) -> Point {
+    pub fn into_point(self) -> Point {
         Point::new(self.x.round() as i32, self.y.round() as i32)
     }
 

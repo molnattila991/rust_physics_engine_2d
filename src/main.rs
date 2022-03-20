@@ -4,12 +4,10 @@ extern  crate sdl2;
 
 use std::time::Duration;
 
-use physics_engine_2d::graphics::colors::*;
+use physics_engine_2d::{graphics::colors::*, game::{ball::Ball, game_entity::{GameEntity, GameEntityMoving}}, physics::vector2d::Vector2D};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::rect::Point;
-
-use physics_engine_2d::graphics::draw::{DrawCircle};
 
 pub fn main () {
     let sdl_context = sdl2::init().unwrap();
@@ -26,8 +24,22 @@ pub fn main () {
     canvas.clear();
     canvas.present();
 
-    let mut position = Point::new(100,100);
     let mut velocity = Point::new(0,0);
+
+    let mut ball = Ball::new(
+        Vector2D::new(100.0, 100.0), 
+        Vector2D::new(0.0,0.0),
+        10.0, 
+        LIGHT_GREEN
+    );
+
+    let ball2 = Ball::new(
+        Vector2D::new(150.0, 100.0), 
+        Vector2D::new(0.0,0.0),
+        10.0, 
+        RED
+    );
+
 
     let mut event_pump = sdl_context.event_pump().unwrap();
     'running: loop {
@@ -46,13 +58,15 @@ pub fn main () {
             }
         }
         
-        position = Point::new(position.x + velocity.x, position.y + velocity.y);
+        //Update
 
-        // canvas.set_draw_color(LIGHT_BLUE);
-        // canvas.clear();
-        let result = canvas.draw_circle_with_color(Point::new(100,100), 510.0, WHITE);
-        let result = canvas.draw_circle_with_color_thick(Point::new(11,11), 10.0, 3, RED);
-        let result = canvas.draw_circle_with_color_filled(position, 20.0, LIGHT_GREEN);
+        ball.set_velocity(Vector2D::new(velocity.x as f32, velocity.y as f32));
+        ball.update().unwrap();
+
+        //Draw
+
+        ball.draw(&mut canvas).unwrap();    
+        ball2.draw(&mut canvas).unwrap();
 
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 120));
