@@ -22,4 +22,15 @@ impl Vector2D {
     pub fn multiply(&self, value: f32) -> Vector2D {
         Vector2D::new(self.x * value, self.y * value)
     }
+
+    pub fn subtract(&self, other: Vector2D) -> Vector2D {
+        Vector2D {
+            x: self.x - other.x,
+            y: self.y - other.y
+        }
+    }
+
+    pub fn magnitude(&self) -> f32 {
+        (self.x.powi(2) + self.y.powi(2)).sqrt()
+    }
 }
