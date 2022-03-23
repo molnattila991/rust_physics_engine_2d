@@ -106,27 +106,3 @@ pub fn main () {
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 120));
     }
 }
-
-fn fun_name(event: &Event, direction: &mut Point) {
-
-
-    
-}
-
-fn set_velocity(event: &Event, velocity: &mut Point) {
-    match event {
-        Event::KeyDown {  repeat: false, keycode: Some(Keycode::Down), .. } => {
-            velocity.y = velocity.y + 1;
-        },
-        Event::KeyDown { repeat: false, keycode: Some(Keycode::Up), .. } => {
-            velocity.y = velocity.y - 1;
-        },
-        Event::KeyDown { repeat: false, keycode: Some(Keycode::Left), .. } => {
-            velocity.x = velocity.x - 1;
-        },
-        Event::KeyDown { repeat: false, keycode: Some(Keycode::Right), .. } => {
-            velocity.x = velocity.x + 1;
-        }
-        _ => {}
-    }
-}
