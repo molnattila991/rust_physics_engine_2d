@@ -1,5 +1,3 @@
-use std::ops::Add;
-
 use sdl2::rect::Point;
 use sdl2::{render::Canvas, video::Window, pixels::Color};
 
@@ -11,15 +9,18 @@ use super::super::graphics::draw::DrawCircle;
 use super::game_entity::{GameEntity, GameEntityMoving};
 
 pub struct Ball {
-    position: Vector2D,       //For calculation purposes
-    position_point: Point,    //For drawing
+    pub radius: f32,
+    pub is_player: bool,
+    position: Vector2D,         //For calculation purposes
+    
+    position_point: Point,          //For drawing
     velocity: Vector2D, 
-    radius: f32,
     color: Color,
 
     direction: Vector2D,
     acceleration: f32,
     friction: f32
+
 }
 
 impl Ball {
@@ -33,7 +34,17 @@ impl Ball {
             direction: Vector2D::new(0.0,0.0),
             acceleration: 0.1,
             friction: 0.01,
+            is_player: false
         }
+    }
+
+    pub fn get_position(&self) -> Vector2D { 
+        self.position.clone()
+    }
+
+    pub fn set_position(&mut self, position: Vector2D) {
+        self.position = position;
+        self.position_point = self.position.clone().into_point();
     }
 }
 
@@ -41,24 +52,41 @@ impl Ball {
 impl GameEntity for Ball {
     fn draw(&self, canvas: &mut Canvas<Window>) -> Result<(), String> {
         
-        let result = canvas.draw_circle_with_color_filled(self.position_point, self.radius, self.color);
+        let result = canvas.draw_circle_with_color(self.position_point, self.radius, self.color);
 
-        let points: [Point; 2] = [self.position_point, self.position.add(self.velocity.multiply(10.0)).into_point()];
-        let _ = canvas.draw_lines_with_color(&points[..], WHITE).unwrap();
-        let points: [Point; 2] = [self.position_point, self.position.add(self.velocity.normal_unit().multiply(100.0)).into_point()];
-        let _ = canvas.draw_lines_with_color(&points[..], WHITE).unwrap();
-        let points: [Point; 2] = [self.position_point, self.position.add(self.direction.multiply(100.0)).into_point()];
-        let _ = canvas.draw_lines_with_color(&points[..], RED).unwrap();
-        let points: [Point; 2] = [self.position_point, self.position.add(self.direction.normal_unit().multiply(100.0)).into_point()];
-        let _ = canvas.draw_lines_with_color(&points[..], RED).unwrap();
+        // let radius = self.radius.clone() as i32;
+        // let boundary : [Point; 5] = [
+        //     Point::new(self.position_point.x + radius, self.position_point.y + radius),
+        //     Point::new(self.position_point.x - radius, self.position_point.y + radius),
+        //     Point::new(self.position_point.x - radius, self.position_point.y - radius),
+        //     Point::new(self.position_point.x + radius, self.position_point.y - radius),
+        //     Point::new(self.position_point.x + radius, self.position_point.y + radius),
+        // ];
+        // let result = canvas.draw_lines_with_color(&boundary[..], WHITE);
+
+
+        if self.is_player {
+            let points: [Point; 2] = [self.position_point, self.position.add(self.velocity.multiply(10.0)).into_point()];
+            let _ = canvas.draw_lines_with_color(&points[..], WHITE).unwrap();
+            let points: [Point; 2] = [self.position_point, self.position.add(self.velocity.normal_unit().multiply(100.0)).into_point()];
+            let _ = canvas.draw_lines_with_color(&points[..], WHITE).unwrap();
+            let points: [Point; 2] = [self.position_point, self.position.add(self.direction.multiply(100.0)).into_point()];
+            let _ = canvas.draw_lines_with_color(&points[..], RED).unwrap();
+            let points: [Point; 2] = [self.position_point, self.position.add(self.direction.normal_unit().multiply(100.0)).into_point()];
+            let _ = canvas.draw_lines_with_color(&points[..], RED).unwrap();
+        }
         
         result
     }
 
     fn update(&mut self) -> Result<(), String> {
-        self.velocity = self.velocity.add(self.direction.multiply(self.acceleration)).multiply(1.0 - self.friction);
-        
+
+        self.direction = self.direction.unit().multiply(self.acceleration);
+        self.velocity = self.velocity.add(self.direction.clone()).multiply(1.0 - self.friction);
         self.position = self.position.add(self.velocity.clone());
+        
+        //self.velocity = self.velocity.add(self.direction.multiply(self.acceleration)).multiply(1.0 - self.friction);
+        //self.position = self.position.add(self.velocity.clone());
         self.position_point = self.position.clone().into_point();
 
         Ok(())
