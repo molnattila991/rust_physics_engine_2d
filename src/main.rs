@@ -1,10 +1,10 @@
 mod graphics;
 
 extern  crate sdl2;
-
+use rand::Rng;
 use std::time::Duration;
 
-use physics_engine_2d::{graphics::colors::*, game::{ball::Ball, game_entity::{GameEntity, GameEntityMoving}}, physics::vector2d::Vector2D};
+use physics_engine_2d::{graphics::{colors::*, draw::Draw}, game::{ball::Ball, game_entity::{GameEntity, GameEntityMoving}}, physics::vector2d::{Vector2D, ExtendedVectorOperations}};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::rect::Point;
@@ -24,22 +24,20 @@ pub fn main () {
     canvas.clear();
     canvas.present();
 
-    let mut direction = Point::new(0,0);
+    let mut direction = Point::new(0,0);   
+    let mut ball_vector = Vec::new();
+    let mut rng = rand::thread_rng();
 
-    let mut ball = Ball::new(
-        Vector2D::new(100.0, 100.0), 
-        Vector2D::new(0.0,0.0),
-        10.0, 
-        LIGHT_GREEN
-    );
-
-    let ball2 = Ball::new(
-        Vector2D::new(150.0, 100.0), 
-        Vector2D::new(0.0,0.0),
-        10.0, 
-        RED
-    );
-
+    for _ in 0..410 {
+        ball_vector.push(Ball::new(
+            Vector2D::new(rng.gen_range(0, 400) as f32, rng.gen_range(0, 400) as f32), 
+            Vector2D::new(0.0,0.0),
+            10.0, 
+            RED
+        ));
+    }
+    
+    ball_vector[0].is_player = true;
     
     let mut event_pump = sdl_context.event_pump().unwrap();
     'running: loop {
@@ -94,15 +92,49 @@ pub fn main () {
         
         //Update
 
-        ball.set_direction(Vector2D::new(direction.x as f32, direction.y as f32));
-        ball.update().unwrap();
+        // ball_vector[0].update().unwrap();
+        // ball_vector[0].set_direction(Vector2D::new(direction.x as f32, direction.y as f32));
 
+        for index1 in 0..ball_vector.len()  {
+            if ball_vector[index1].is_player == true{
+                ball_vector[index1].set_direction(Vector2D::new(direction.x as f32, direction.y as f32));
+            }
+            ball_vector[index1].update().unwrap();
+
+            for index2 in index1..ball_vector.len()  {
+                let is_collide = collision_ball_ball(&ball_vector[index1], &ball_vector[index2]).unwrap();
+                if is_collide {
+                    let res = penetration_resolution_ball_ball(&ball_vector[index1], &ball_vector[index2]);
+                    ball_vector[index1].set_position(res.0);
+                    ball_vector[index2].set_position(res.1);
+                }
+            }
+        }
+        
         //Draw
+        //ball_vector[0].draw(&mut canvas).unwrap();    
 
-        ball.draw(&mut canvas).unwrap();    
-        ball2.draw(&mut canvas).unwrap();
+        for index1 in 0..ball_vector.len()  {
+            ball_vector[index1].draw(&mut canvas).unwrap();    
+        }
 
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 120));
     }
+}
+
+fn collision_ball_ball(b1: &Ball, b2: &Ball) -> Result<bool, String> {
+    if b1.radius + b2.radius >= b1.get_position().subtract(b2.get_position().clone()).magnitude() {
+        Ok(true)
+    } else {
+        Ok(false)
+    }
+}
+
+fn penetration_resolution_ball_ball(b1: &Ball, b2: &Ball) -> (Vector2D, Vector2D) {
+    let distance = b1.get_position().subtract(b2.get_position().clone());
+    let pen_depth = b1.radius + b2.radius - distance.magnitude();
+    let pen_res = distance.unit().multiply(pen_depth/2.0);
+
+    (b1.get_position().add(pen_res.clone()), b2.get_position().add(pen_res.multiply(-1.0)))
 }
