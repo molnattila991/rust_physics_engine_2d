@@ -101,4 +101,8 @@ impl GameEntityMoving for Ball {
     fn set_direction(&mut self, value: Vector2D) {
         self.direction = value;
     }
+
+    fn get_velocity(&self) -> Vector2D {
+        self.velocity.clone()
+    }
 }
