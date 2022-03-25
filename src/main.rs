@@ -28,12 +28,12 @@ pub fn main () {
     let mut ball_vector = Vec::new();
     let mut rng = rand::thread_rng();
 
-    for _ in 0..410 {
+    for _ in 0..55 {
         ball_vector.push(Ball::new(
             Vector2D::new(rng.gen_range(0, 400) as f32, rng.gen_range(0, 400) as f32), 
             Vector2D::new(0.0,0.0),
             10.0, 
-            RED
+            WHITE
         ));
     }
     
@@ -101,12 +101,22 @@ pub fn main () {
             }
             ball_vector[index1].update().unwrap();
 
-            for index2 in index1..ball_vector.len()  {
-                let is_collide = collision_ball_ball(&ball_vector[index1], &ball_vector[index2]).unwrap();
-                if is_collide {
-                    let res = penetration_resolution_ball_ball(&ball_vector[index1], &ball_vector[index2]);
-                    ball_vector[index1].set_position(res.0);
-                    ball_vector[index2].set_position(res.1);
+            for index2 in index1 + 1..ball_vector.len()  {
+                if index1 != index2 {
+                    let is_collide = collision_ball_ball(&ball_vector[index1], &ball_vector[index2]).unwrap();
+                    if is_collide {
+                        let res = penetration_resolution_ball_ball(&ball_vector[index1], &ball_vector[index2]);
+                        ball_vector[index1].set_position(res.0);
+                        ball_vector[index2].set_position(res.1);
+                        
+                        let res = collision_resolution_ball_ball(&ball_vector[index1], &ball_vector[index2]);
+                        
+                        let new_vel1 = ball_vector[index1].get_velocity().add(res.0);
+                        let new_vel2 = ball_vector[index2].get_velocity().add(res.1);
+
+                        ball_vector[index1].set_velocity(new_vel1);
+                        ball_vector[index2].set_velocity(new_vel2);
+                    }
                 }
             }
         }
@@ -137,4 +147,14 @@ fn penetration_resolution_ball_ball(b1: &Ball, b2: &Ball) -> (Vector2D, Vector2D
     let pen_res = distance.unit().multiply(pen_depth/2.0);
 
     (b1.get_position().add(pen_res.clone()), b2.get_position().add(pen_res.multiply(-1.0)))
+}
+
+fn collision_resolution_ball_ball(b1: &Ball, b2: &Ball) -> (Vector2D, Vector2D) {
+    let normal = b1.get_position().subtract(b2.get_position()).unit();
+    let relative_velocity = b1.get_velocity().subtract(b2.get_velocity());
+    let sep_velocity = Vector2D::dot_product(relative_velocity, normal.clone());
+    let new_sep_velocity = -sep_velocity;
+    let sep_velocity_vector = normal.multiply(new_sep_velocity);
+    
+    (sep_velocity_vector.clone(), sep_velocity_vector.multiply(-1.0))
 }

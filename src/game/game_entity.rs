@@ -10,4 +10,5 @@ pub trait GameEntity {
 pub trait GameEntityMoving {
     fn set_velocity(&mut self, value: Vector2D);
     fn set_direction(&mut self, value: Vector2D);
+    fn get_velocity(&self) -> Vector2D;
 }
