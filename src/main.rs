@@ -4,7 +4,7 @@ extern  crate sdl2;
 use rand::Rng;
 use std::{time::Duration};
 
-use physics_engine_2d::{graphics::{colors::*, draw::Draw}, game::{ball::Ball, game_entity::{GameEntity, GameEntityMoving}}, physics::vector2d::{Vector2D, ExtendedVectorOperations}};
+use physics_engine_2d::{graphics::{colors::*, draw::Draw}, game::{ball::Ball, game_entity::{GameEntity, GameEntityMoving}, wall::{Wall, self}}, physics::vector2d::{Vector2D, ExtendedVectorOperations}};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::rect::Point;
@@ -26,6 +26,7 @@ pub fn main () {
 
     let mut direction = Point::new(0,0);   
     let mut ball_vector = Vec::new();
+    let mut wall_vector: Vec<Wall> = Vec::new();
     let mut rng = rand::thread_rng();
 
     for _ in 0..55 {
@@ -37,7 +38,14 @@ pub fn main () {
             rng.gen_range(0, 400) as f32
         ));
     }
-    
+
+    wall_vector.push(Wall::new(Vector2D::new(10.0, 10.0), Vector2D::new(700.0, 10.0)));
+    wall_vector.push(Wall::new(Vector2D::new(700.0, 10.0), Vector2D::new(500.0, 700.0)));
+    wall_vector.push(Wall::new(Vector2D::new(500.0, 700.0), Vector2D::new(10.0, 700.0)));
+    wall_vector.push(Wall::new(Vector2D::new(10.0, 700.0), Vector2D::new(10.0, 10.0)));
+
+    wall_vector.push(Wall::new(Vector2D::new(110.0, 110.0), Vector2D::new(310.0, 310.0)));
+
     ball_vector[0].is_player = true;
     
     let mut event_pump = sdl_context.event_pump().unwrap();
@@ -96,11 +104,23 @@ pub fn main () {
         // ball_vector[0].update().unwrap();
         // ball_vector[0].set_direction(Vector2D::new(direction.x as f32, direction.y as f32));
 
+        wall_vector[0].update().unwrap();
+
         for index1 in 0..ball_vector.len()  {
             if ball_vector[index1].is_player == true{
                 ball_vector[index1].set_direction(Vector2D::new(direction.x as f32, direction.y as f32));
             }
             ball_vector[index1].update().unwrap();
+
+            for index_wall in 0..wall_vector.len() {
+                if collision_detection_ball_wall(&ball_vector[index1], &wall_vector[index_wall]) {
+                    //println!("Collide {}", rng.gen_range(0, 400));
+                    let new_position = penetration_resolution_ball_wall(&ball_vector[index1], &wall_vector[index_wall]);
+                    ball_vector[index1].set_position(new_position);
+                    let v = collision_resolution_ball_wall(&ball_vector[index1], &wall_vector[index_wall]);
+                    ball_vector[index1].set_velocity(v);
+                }
+            }
 
             for index2 in index1 + 1..ball_vector.len()  {
                 if index1 != index2 {
@@ -123,11 +143,29 @@ pub fn main () {
         }
         
         //Draw
-        //ball_vector[0].draw(&mut canvas).unwrap();    
+        //ball_vector[0].draw(&mut canvas).unwrap();
+
+        // if collision_detection_ball_wall(&ball_vector[0], &wall_vector[0]) {
+        //     println!("Collide {}", rng.gen_range(0, 400));
+        //     let new_position = penetration_resolution_ball_wall(&ball_vector[0], &wall_vector[0]);
+        //     ball_vector[0].set_position(new_position);
+        //     let v = collision_resolution_ball_wall(&ball_vector[0], &wall_vector[0]);
+        //     ball_vector[0].set_velocity(v);
+        // }
+
+        for index_wall in 0..wall_vector.len() {
+            wall_vector[index_wall].draw(&mut canvas).unwrap();
+
+            let point = closest_point_wall_ball(&ball_vector[0], &wall_vector[index_wall]);
+            let points = [ball_vector[0].get_position().into_point(), point.into_point()];
+            let _ = canvas.draw_lines_with_color(&points[..], RED);
+        }
 
         for index1 in 0..ball_vector.len()  {
             ball_vector[index1].draw(&mut canvas).unwrap();    
         }
+
+        
 
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 120));
@@ -162,4 +200,42 @@ fn collision_resolution_ball_ball(b1: &Ball, b2: &Ball) -> (Vector2D, Vector2D) 
     let impulse_vector = normal.multiply(impulse);
 
     (impulse_vector.multiply(b1.inverse_mass).clone(), impulse_vector.multiply(-b2.inverse_mass))
+}
+
+fn closest_point_wall_ball(ball: &Ball, wall: &Wall) -> Vector2D {
+    let ball_to_wall_start = wall.start.subtract(ball.get_position());
+    if Vector2D::dot_product(wall.wall_unit(), ball_to_wall_start.clone()) > 0.0 {
+        return wall.start.clone();
+    }
+
+    let wall_end_to_ball = ball.get_position().subtract(wall.end.clone());
+    if Vector2D::dot_product(wall.wall_unit(), wall_end_to_ball) > 0.0 {
+        return wall.end.clone();
+    }
+
+    let closest_dist = Vector2D::dot_product(wall.wall_unit(), ball_to_wall_start);
+    let closest_vect = wall.wall_unit().multiply(closest_dist);
+    wall.start.subtract(closest_vect)
+}
+
+fn collision_detection_ball_wall(ball: &Ball, wall: &Wall) -> bool {
+    let ball_to_closest = closest_point_wall_ball(ball, wall).subtract(ball.get_position());
+    if ball_to_closest.magnitude() <= ball.radius {
+        return true;
+    }
+
+    false
+}
+
+fn penetration_resolution_ball_wall(ball: &Ball, wall: &Wall) -> Vector2D {
+    let penetration_vector = ball.get_position().subtract(closest_point_wall_ball(ball, wall));
+    ball.get_position().add(penetration_vector.unit().multiply(ball.radius - penetration_vector.magnitude()))
+}
+
+fn collision_resolution_ball_wall(ball: &Ball, wall: &Wall) -> Vector2D {
+    let normal = ball.get_position().subtract(closest_point_wall_ball(ball, wall)).unit();
+    let sep_velocity = Vector2D::dot_product(ball.get_velocity(), normal);
+    let new_sep_velocity = -sep_velocity * 0.0;// ball.elasticity;
+    let vsep_diff = sep_velocity - new_sep_velocity;
+    ball.get_velocity().add(normal.multiply(-vsep_diff))
 }
