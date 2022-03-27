@@ -12,7 +12,9 @@ pub struct Ball {
     pub radius: f32,
     pub is_player: bool,
     position: Vector2D,         //For calculation purposes
-    
+    pub mass: f32,
+    pub inverse_mass: f32,
+    pub elasticity: f32,
     position_point: Point,          //For drawing
     velocity: Vector2D, 
     color: Color,
@@ -24,17 +26,26 @@ pub struct Ball {
 }
 
 impl Ball {
-    pub fn new(position: Vector2D, velocity: Vector2D, radius: f32, color: Color) -> Self {
+    pub fn new(position: Vector2D, velocity: Vector2D, radius: f32, color: Color, mass: f32) -> Self {
+        let m;
+        if mass == 0.0 { 
+            m = 0.0; 
+        }else { 
+            m = 1.0/mass; 
+        }
         Self {
             position: position.clone(),
             velocity,
             position_point: position.into_point(),
             radius,
             color,
+            mass,
+            inverse_mass: m,
             direction: Vector2D::new(0.0,0.0),
             acceleration: 0.1,
             friction: 0.01,
-            is_player: false
+            is_player: false,
+            elasticity: 1.0
         }
     }
 

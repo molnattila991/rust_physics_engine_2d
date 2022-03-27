@@ -2,7 +2,7 @@ mod graphics;
 
 extern  crate sdl2;
 use rand::Rng;
-use std::time::Duration;
+use std::{time::Duration};
 
 use physics_engine_2d::{graphics::{colors::*, draw::Draw}, game::{ball::Ball, game_entity::{GameEntity, GameEntityMoving}}, physics::vector2d::{Vector2D, ExtendedVectorOperations}};
 use sdl2::event::Event;
@@ -33,7 +33,8 @@ pub fn main () {
             Vector2D::new(rng.gen_range(0, 400) as f32, rng.gen_range(0, 400) as f32), 
             Vector2D::new(0.0,0.0),
             10.0, 
-            WHITE
+            WHITE,
+            rng.gen_range(0, 400) as f32
         ));
     }
     
@@ -144,17 +145,21 @@ fn collision_ball_ball(b1: &Ball, b2: &Ball) -> Result<bool, String> {
 fn penetration_resolution_ball_ball(b1: &Ball, b2: &Ball) -> (Vector2D, Vector2D) {
     let distance = b1.get_position().subtract(b2.get_position().clone());
     let pen_depth = b1.radius + b2.radius - distance.magnitude();
-    let pen_res = distance.unit().multiply(pen_depth/2.0);
+    let pen_res = distance.unit().multiply(pen_depth/(b1.inverse_mass + b2.inverse_mass));
 
-    (b1.get_position().add(pen_res.clone()), b2.get_position().add(pen_res.multiply(-1.0)))
+    (b1.get_position().add(pen_res.multiply(b1.inverse_mass).clone()), b2.get_position().add(pen_res.multiply(-b2.inverse_mass)))
 }
 
 fn collision_resolution_ball_ball(b1: &Ball, b2: &Ball) -> (Vector2D, Vector2D) {
     let normal = b1.get_position().subtract(b2.get_position()).unit();
     let relative_velocity = b1.get_velocity().subtract(b2.get_velocity());
     let sep_velocity = Vector2D::dot_product(relative_velocity, normal.clone());
-    let new_sep_velocity = -sep_velocity;
-    let sep_velocity_vector = normal.multiply(new_sep_velocity);
+    let new_sep_velocity = -sep_velocity * b1.elasticity.max(b2.elasticity);
+    //let sep_velocity_vector = normal.multiply(new_sep_velocity);
     
-    (sep_velocity_vector.clone(), sep_velocity_vector.multiply(-1.0))
+    let vsep_diff = new_sep_velocity - sep_velocity;
+    let impulse = vsep_diff / (b1.inverse_mass + b2.inverse_mass);
+    let impulse_vector = normal.multiply(impulse);
+
+    (impulse_vector.multiply(b1.inverse_mass).clone(), impulse_vector.multiply(-b2.inverse_mass))
 }
