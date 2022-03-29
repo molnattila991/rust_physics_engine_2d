@@ -38,13 +38,14 @@ pub fn main () {
             rng.gen_range(0, 400) as f32
         ));
     }
-
+    
+    wall_vector.push(Wall::new(Vector2D::new(110.0, 110.0), Vector2D::new(310.0, 310.0)));
+    
     wall_vector.push(Wall::new(Vector2D::new(10.0, 10.0), Vector2D::new(700.0, 10.0)));
     wall_vector.push(Wall::new(Vector2D::new(700.0, 10.0), Vector2D::new(500.0, 700.0)));
     wall_vector.push(Wall::new(Vector2D::new(500.0, 700.0), Vector2D::new(10.0, 700.0)));
     wall_vector.push(Wall::new(Vector2D::new(10.0, 700.0), Vector2D::new(10.0, 10.0)));
 
-    wall_vector.push(Wall::new(Vector2D::new(110.0, 110.0), Vector2D::new(310.0, 310.0)));
 
     ball_vector[0].is_player = true;
     
@@ -104,8 +105,6 @@ pub fn main () {
         // ball_vector[0].update().unwrap();
         // ball_vector[0].set_direction(Vector2D::new(direction.x as f32, direction.y as f32));
 
-        wall_vector[0].update().unwrap();
-
         for index1 in 0..ball_vector.len()  {
             if ball_vector[index1].is_player == true{
                 ball_vector[index1].set_direction(Vector2D::new(direction.x as f32, direction.y as f32));
@@ -113,6 +112,11 @@ pub fn main () {
             ball_vector[index1].update().unwrap();
 
             for index_wall in 0..wall_vector.len() {
+                if index_wall == 0 {
+                    wall_vector[index_wall].rotate(0.0002);
+                }
+                wall_vector[index_wall].update().unwrap();
+
                 if collision_detection_ball_wall(&ball_vector[index1], &wall_vector[index_wall]) {
                     //println!("Collide {}", rng.gen_range(0, 400));
                     let new_position = penetration_resolution_ball_wall(&ball_vector[index1], &wall_vector[index_wall]);

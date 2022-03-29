@@ -2,11 +2,14 @@ use sdl2::rect::Point;
 
 #[derive(Clone, Copy)]
 pub struct Vector2D {
-    x: f32,
-    y: f32,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl Vector2D {
+    pub fn zero() -> Self {
+        Self { x: 0.0, y: 0.0}
+    }
     pub fn new(x: f32, y:f32) -> Self {
         Self {x, y}
     }
