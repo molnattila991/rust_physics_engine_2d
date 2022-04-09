@@ -29,18 +29,21 @@ pub fn main () {
     let mut wall_vector: Vec<Wall> = Vec::new();
     let mut rng = rand::thread_rng();
 
-    for _ in 0..55 {
+    for _ in 0..455 {
         ball_vector.push(Ball::new(
-            Vector2D::new(rng.gen_range(0, 400) as f32, rng.gen_range(0, 400) as f32), 
+            Vector2D::new(rng.gen_range(0..400) as f32, rng.gen_range(0..400) as f32), 
             Vector2D::new(0.0,0.0),
             10.0, 
             WHITE,
-            rng.gen_range(0, 400) as f32
+            rng.gen_range(0..400) as f32
         ));
     }
     
     wall_vector.push(Wall::new(Vector2D::new(110.0, 110.0), Vector2D::new(310.0, 310.0)));
     
+
+    wall_vector.push(Wall::new(Vector2D::new(0.0, 300.0), Vector2D::new(700.0, 300.0)));
+
     wall_vector.push(Wall::new(Vector2D::new(10.0, 10.0), Vector2D::new(700.0, 10.0)));
     wall_vector.push(Wall::new(Vector2D::new(700.0, 10.0), Vector2D::new(500.0, 700.0)));
     wall_vector.push(Wall::new(Vector2D::new(500.0, 700.0), Vector2D::new(10.0, 700.0)));

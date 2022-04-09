@@ -32,6 +32,17 @@ impl Vector2D {
             self.y - other.y
         )
     }
+
+    pub fn rotate_around_point(&self, point: Vector2D, angle: f32) -> Vector2D {
+        let (s, c) = angle.sin_cos();
+
+        let point_translated_to_origin = Vector2D::new(point.x - self.x, point.y - self.y);
+
+        let x_new = point_translated_to_origin.x * c - point_translated_to_origin.y * s;
+        let y_new = point_translated_to_origin.x * s + point_translated_to_origin.y * c;
+
+        Vector2D { x: x_new + point.x, y: y_new + point.y }
+    }
 }
 
 impl ExtendedVectorOperations for Vector2D {
