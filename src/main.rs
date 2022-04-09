@@ -4,7 +4,7 @@ extern  crate sdl2;
 use rand::Rng;
 use std::{time::Duration};
 
-use physics_engine_2d::{graphics::{colors::*, draw::Draw}, game::{ball::Ball, game_entity::{GameEntity, GameEntityMoving}, wall::{Wall, self}}, physics::vector2d::{Vector2D, ExtendedVectorOperations}};
+use physics_engine_2d::{graphics::{colors::*, draw::Draw}, game::{ball::Ball, game_entity::{GameEntity, GameEntityMoving}, wall::{Wall, self}, capsule::Capsule}, physics::vector2d::{Vector2D, ExtendedVectorOperations}};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::rect::Point;
@@ -29,18 +29,23 @@ pub fn main () {
     let mut wall_vector: Vec<Wall> = Vec::new();
     let mut rng = rand::thread_rng();
 
+    let mut capsule = Capsule::new(Vector2D::new(400.0, 100.0), 100.0, 30.0, 30.0);
+
     for _ in 0..55 {
         ball_vector.push(Ball::new(
-            Vector2D::new(rng.gen_range(0, 400) as f32, rng.gen_range(0, 400) as f32), 
+            Vector2D::new(rng.gen_range(0..400) as f32, rng.gen_range(0..400) as f32), 
             Vector2D::new(0.0,0.0),
             10.0, 
             WHITE,
-            rng.gen_range(0, 400) as f32
+            rng.gen_range(0..400) as f32
         ));
     }
     
     wall_vector.push(Wall::new(Vector2D::new(110.0, 110.0), Vector2D::new(310.0, 310.0)));
     
+
+    wall_vector.push(Wall::new(Vector2D::new(0.0, 300.0), Vector2D::new(700.0, 300.0)));
+
     wall_vector.push(Wall::new(Vector2D::new(10.0, 10.0), Vector2D::new(700.0, 10.0)));
     wall_vector.push(Wall::new(Vector2D::new(700.0, 10.0), Vector2D::new(500.0, 700.0)));
     wall_vector.push(Wall::new(Vector2D::new(500.0, 700.0), Vector2D::new(10.0, 700.0)));
@@ -145,6 +150,8 @@ pub fn main () {
                 }
             }
         }
+
+        _ = capsule.update();
         
         //Draw
         //ball_vector[0].draw(&mut canvas).unwrap();
@@ -169,6 +176,7 @@ pub fn main () {
             ball_vector[index1].draw(&mut canvas).unwrap();    
         }
 
+        _ = capsule.draw(&mut canvas);
         
 
         canvas.present();
