@@ -26,6 +26,10 @@ impl Vector2D {
         Vector2D::new(self.x * value, self.y * value)
     }
 
+    pub fn multiply_with_vector(&self, value: Vector2D) -> Vector2D {
+        Vector2D::new(self.x * value.x, self.y * value.y)
+    }
+
     pub fn subtract(&self, other: Vector2D) -> Vector2D {
         Vector2D::new(
             self.x - other.x,

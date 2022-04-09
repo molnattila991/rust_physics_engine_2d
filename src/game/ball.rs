@@ -93,7 +93,7 @@ impl GameEntity for Ball {
     fn update(&mut self) -> Result<(), String> {
 
         self.direction = self.direction.unit().multiply(self.acceleration);
-        self.velocity = self.velocity.add(self.direction.clone()).multiply(1.0 - self.friction).add(Vector2D { x: 0.0, y: 0.1 });
+        self.velocity = self.velocity.add(self.direction.clone()).multiply(1.0 - self.friction);
         self.position = self.position.add(self.velocity.clone());
         
         //self.velocity = self.velocity.add(self.direction.multiply(self.acceleration)).multiply(1.0 - self.friction);
