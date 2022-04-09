@@ -4,7 +4,7 @@ extern  crate sdl2;
 use rand::Rng;
 use std::{time::Duration};
 
-use physics_engine_2d::{graphics::{colors::*, draw::Draw}, game::{ball::Ball, game_entity::{GameEntity, GameEntityMoving}, wall::{Wall, self}, capsule::Capsule}, physics::vector2d::{Vector2D, ExtendedVectorOperations}};
+use physics_engine_2d::{graphics::{colors::*, draw::Draw}, game::{ball::Ball, game_entity::{GameEntity, GameEntityMoving}, wall::{Wall, self}, capsule::{Capsule, self}, line::Line}, physics::vector2d::{Vector2D, ExtendedVectorOperations}};
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::rect::Point;
@@ -27,9 +27,12 @@ pub fn main () {
     let mut direction = Point::new(0,0);   
     let mut ball_vector = Vec::new();
     let mut wall_vector: Vec<Wall> = Vec::new();
+    let mut capsule_vector: Vec<Capsule> = Vec::new();
     let mut rng = rand::thread_rng();
 
-    let mut capsule = Capsule::new(Vector2D::new(400.0, 100.0), 100.0, 30.0, 30.0);
+    capsule_vector.push(Capsule::new(Vector2D::new(400.0, 100.0), 100.0, 30.0, 30.0));
+    capsule_vector.push(Capsule::new(Vector2D::new(500.0, 300.0), 70.0, 10.0, 10.0));
+    capsule_vector.push(Capsule::new(Vector2D::new(500.0, 350.0), 70.0, 10.0, 330.0));
 
     for _ in 0..55 {
         ball_vector.push(Ball::new(
@@ -150,9 +153,18 @@ pub fn main () {
                 }
             }
         }
+       
+        for index_1 in 0..capsule_vector.len() {
+            _ = capsule_vector[index_1].update();
 
-        _ = capsule.update();
-        
+            for index_2 in index_1 + 1 ..capsule_vector.len() {
+                let res = closest_point_between_line_segments(&capsule_vector[index_1].get_line(), &capsule_vector[index_2].get_line());
+                let line = [res[0].into_point(), res[1].into_point()];
+                _ = canvas.draw_lines_with_color(&line[..], PINK);
+
+            }
+        }
+
         //Draw
         //ball_vector[0].draw(&mut canvas).unwrap();
 
@@ -167,7 +179,7 @@ pub fn main () {
         for index_wall in 0..wall_vector.len() {
             wall_vector[index_wall].draw(&mut canvas).unwrap();
 
-            let point = closest_point_wall_ball(&ball_vector[0], &wall_vector[index_wall]);
+            let point = closest_point_on_line_segment(ball_vector[0].get_position(), &wall_vector[index_wall].line);
             let points = [ball_vector[0].get_position().into_point(), point.into_point()];
             let _ = canvas.draw_lines_with_color(&points[..], RED);
         }
@@ -176,8 +188,9 @@ pub fn main () {
             ball_vector[index1].draw(&mut canvas).unwrap();    
         }
 
-        _ = capsule.draw(&mut canvas);
-        
+        for index_capsule in 0..capsule_vector.len() {
+            _ = capsule_vector[index_capsule].draw(&mut canvas);
+        }
 
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 120));
@@ -214,24 +227,40 @@ fn collision_resolution_ball_ball(b1: &Ball, b2: &Ball) -> (Vector2D, Vector2D) 
     (impulse_vector.multiply(b1.inverse_mass).clone(), impulse_vector.multiply(-b2.inverse_mass))
 }
 
-fn closest_point_wall_ball(ball: &Ball, wall: &Wall) -> Vector2D {
-    let ball_to_wall_start = wall.start.subtract(ball.get_position());
-    if Vector2D::dot_product(wall.wall_unit(), ball_to_wall_start.clone()) > 0.0 {
-        return wall.start.clone();
+fn closest_point_on_line_segment(point: Vector2D, line: &Line) -> Vector2D {
+    let point_to_line_start = line.start.subtract(point);
+    if Vector2D::dot_product(line.direction, point_to_line_start.clone()) > 0.0 {
+        return line.start.clone();
     }
 
-    let wall_end_to_ball = ball.get_position().subtract(wall.end.clone());
+    let line_end_to_point = point.subtract(line.end.clone());
+    if Vector2D::dot_product(line.direction, line_end_to_point) > 0.0 {
+        return line.end.clone();
+    }
+
+    let closest_dist = Vector2D::dot_product(line.direction, point_to_line_start);
+    let closest_vect = line.direction.multiply(closest_dist);
+    line.start.subtract(closest_vect)
+}
+
+fn closest_point_wall_ball(ball: &Ball, wall: &Wall) -> Vector2D {
+    let ball_to_wall_start = wall.line.start.subtract(ball.get_position());
+    if Vector2D::dot_product(wall.wall_unit(), ball_to_wall_start.clone()) > 0.0 {
+        return wall.line.start.clone();
+    }
+
+    let wall_end_to_ball = ball.get_position().subtract(wall.line.end.clone());
     if Vector2D::dot_product(wall.wall_unit(), wall_end_to_ball) > 0.0 {
-        return wall.end.clone();
+        return wall.line.end.clone();
     }
 
     let closest_dist = Vector2D::dot_product(wall.wall_unit(), ball_to_wall_start);
     let closest_vect = wall.wall_unit().multiply(closest_dist);
-    wall.start.subtract(closest_vect)
+    wall.line.start.subtract(closest_vect)
 }
 
 fn collision_detection_ball_wall(ball: &Ball, wall: &Wall) -> bool {
-    let ball_to_closest = closest_point_wall_ball(ball, wall).subtract(ball.get_position());
+    let ball_to_closest = closest_point_on_line_segment(ball.get_position(), &wall.line).subtract(ball.get_position());
     if ball_to_closest.magnitude() <= ball.radius {
         return true;
     }
@@ -240,14 +269,47 @@ fn collision_detection_ball_wall(ball: &Ball, wall: &Wall) -> bool {
 }
 
 fn penetration_resolution_ball_wall(ball: &Ball, wall: &Wall) -> Vector2D {
-    let penetration_vector = ball.get_position().subtract(closest_point_wall_ball(ball, wall));
+    let penetration_vector = ball.get_position().subtract(closest_point_on_line_segment(ball.get_position(), &wall.line));
     ball.get_position().add(penetration_vector.unit().multiply(ball.radius - penetration_vector.magnitude()))
 }
 
 fn collision_resolution_ball_wall(ball: &Ball, wall: &Wall) -> Vector2D {
-    let normal = ball.get_position().subtract(closest_point_wall_ball(ball, wall)).unit();
+    let normal = ball.get_position().subtract(closest_point_on_line_segment(ball.get_position(), &wall.line)).unit();
     let sep_velocity = Vector2D::dot_product(ball.get_velocity(), normal);
     let new_sep_velocity = -sep_velocity * 0.0;// ball.elasticity;
     let vsep_diff = sep_velocity - new_sep_velocity;
     ball.get_velocity().add(normal.multiply(-vsep_diff))
+}
+
+fn closest_point_between_line_segments(l1: &Line, l2: &Line) -> [Vector2D; 2] {
+    let temp = closest_point_on_line_segment(l1.start, l2);
+
+    let mut shortest_distance = temp.subtract(l1.start).magnitude();
+    let mut closest_points = [l1.start, temp];
+
+    let temp = closest_point_on_line_segment(l1.end, l2);
+    let temp_mag = temp.subtract(l1.end).magnitude();
+
+    if temp_mag < shortest_distance {
+        shortest_distance = temp_mag;
+        closest_points = [l1.end, temp];
+    }
+
+    let temp = closest_point_on_line_segment(l2.start, l1);
+    let temp_mag = temp.subtract(l2.start).magnitude();
+
+    if temp_mag < shortest_distance {
+        shortest_distance = temp_mag;
+        closest_points = [temp, l2.start];
+    }
+
+    let temp = closest_point_on_line_segment(l2.end, l1);
+    let temp_mag = temp.subtract(l2.end).magnitude();
+
+    if temp_mag < shortest_distance {
+        shortest_distance = temp_mag;
+        closest_points = [temp, l2.end];
+    }
+
+    closest_points
 }
